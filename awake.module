@@ -34,13 +34,19 @@ function awake_call_request($requesturl, $method, $params = array()) {
   }
 }
 
+/**
+ * Implements hook_theme().
+ */
 function awake_theme($existing, $type, $theme, $path) {
   return [
-    'awake_compare_response' => [
-      'variables' => ['products' => NULL, 'company' => NULL, 'user' => NULL, 'dateTime' => NULL],
-    ],
-    'awake_get_product_by_id' => [
-      'variables' => ['product' => NULL],
+    'awake_response' => [
+      'variables' => [
+        'products' => NULL,
+        'company' => NULL,
+        'user' => NULL,
+        'dateTime' => NULL,
+      ],
+      'template' => 'awake-response',
     ],
   ];
 }
