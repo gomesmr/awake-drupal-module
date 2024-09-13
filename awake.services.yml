@@ -1,0 +1,4 @@
+services:
+  awake.client:
+    class: Drupal\awake\Client\AwakeClient
+    arguments: ['@http_client', '@messenger']

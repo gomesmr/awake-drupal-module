@@ -1,0 +1,10 @@
+<h1>Comparação de Produtos</h1>
+<p>Empresa: {{ company.companyName }}</p>
+<p>Usuário: {{ user.userName }} - Data: {{ dateTime }}</p>
+<ul>
+    {% for product in products %}
+        <li>{{ product.description }} - Preço: {{ product.price }} - Status: {{ product.status }}</li>
+    {% else %}
+        <li>Nenhum produto encontrado.</li>
+    {% endfor %}
+</ul>
