@@ -1,0 +1,46 @@
+<?php
+/**
+ * @file
+ *  API module for making external API requests.
+ */
+function awake_response($url, $method = 'GET', $params = array()) {
+  $methods = ['POST', 'GET', 'PUT', 'DELETE'];
+  $result = array();
+
+  if (empty($url) || !in_array(strtoupper($method), $methods)) {
+    return "Invalid method or URL";
+  }
+
+  if (function_exists('awake_call_request')) {
+    $result = awake_call_request($url, $method, $params);
+  }
+
+  return $result;
+}
+
+function awake_call_request($requesturl, $method, $params = array()) {
+  try {
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $requesturl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+    $result = curl_exec($ch);
+    curl_close($ch);
+
+    return $result;
+  } catch (Exception $e) {
+    return $e->getMessage();
+  }
+}
+
+function awake_theme($existing, $type, $theme, $path) {
+  return [
+    'awake_compare_response' => [
+      'variables' => ['products' => NULL, 'company' => NULL, 'user' => NULL, 'dateTime' => NULL],
+    ],
+    'awake_get_product_by_id' => [
+      'variables' => ['product' => NULL],
+    ],
+  ];
+}

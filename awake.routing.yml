@@ -1,0 +1,15 @@
+awake.post_data:
+  path: '/awake-post'
+  defaults:
+    _controller: '\Drupal\awake\Controller\AwakeController::postData'
+    _title: 'Post Data'
+  requirements:
+    _permission: 'access content'
+
+awake.product_get:
+  path: '/awake-product/{gtin}'
+  defaults:
+    _controller: '\Drupal\awake\Controller\AwakeController::getProductByGtin'
+    _title: 'Get Product by GTIN'
+  requirements:
+    _permission: 'access content'

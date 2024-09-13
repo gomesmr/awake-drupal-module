@@ -1,0 +1,6 @@
+name: Awake
+description: "Creates a page consuming an external API."
+package: Custom
+type: module
+version: 1.0
+core_version_requirement: ^10
