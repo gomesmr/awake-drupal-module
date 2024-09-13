@@ -13,3 +13,11 @@ awake.product_get:
     _title: 'Get Product by GTIN'
   requirements:
     _permission: 'access content'
+awake.post_form:
+  path: '/awake-post-form'
+  defaults:
+    _form: 'Drupal\awake\Form\AwakePostForm'
+    _title: 'Post MLeva Data'
+  requirements:
+    _permission: 'access content'
+
