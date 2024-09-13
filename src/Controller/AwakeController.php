@@ -18,7 +18,6 @@ class AwakeController extends ControllerBase {
   }
 
   public function renderResponse() {
-    // Recupera os dados armazenados na sessão
     $response_data = \Drupal::request()->getSession()->get('awake_response_data');
 
     if (!$response_data) {
@@ -27,13 +26,16 @@ class AwakeController extends ControllerBase {
       ];
     }
 
-    // Renderiza o template Twig com os dados da resposta
-    return [
+    $build = [
       '#theme' => 'awake_response',
-      '#products' => $response_data['products'],
-      '#company' => $response_data['company'],
-      '#user' => $response_data['user'],
-      '#dateTime' => $response_data['dateTime'],
+      '#products' => $response_data['products'] ?? [],
+      '#company' => $response_data['company'] ?? null,
+      '#user' => $response_data['user'] ?? null,
+      '#dateTime' => $response_data['dateTime'] ?? null,
     ];
+
+    $build['#cache']['max-age'] = 0;
+
+    return $build;
   }
 }
