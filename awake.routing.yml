@@ -13,6 +13,7 @@ awake.product_get:
     _title: 'Get Product by GTIN'
   requirements:
     _permission: 'access content'
+
 awake.post_form:
   path: '/awake-post-form'
   defaults:
@@ -20,4 +21,16 @@ awake.post_form:
     _title: 'Post MLeva Data'
   requirements:
     _permission: 'access content'
+
+awake.response_page:
+  path: '/awake/response'
+  defaults:
+    _controller: '\Drupal\awake\Controller\AwakeController::renderResponse'
+    _title: 'Resposta Awake'
+  requirements:
+    _permission: 'access content'
+  options:
+    _custom_theme: awake
+    _library: 'awake/styles'
+
 
