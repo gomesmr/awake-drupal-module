@@ -3,17 +3,19 @@
     <h4 class="response-subheader">Produtos</h4>
     <ul class="response-list">
         {% for product in products %}
-            <li class="response-item">
-                <span><strong>GTIN:</strong> {{ product.gtin }}</span><br>
-                <span><strong>Descrição:</strong> {{ product.description }}</span><br>
+            <div class="response-item">
+                <span><h2> {{ product.description }}</h2></span><br>
+                <span><h3><strong>GTIN:</strong> {{ product.gtin }}</h3></span><br>
                 <span><strong>Índice:</strong> {{ product.index }}</span><br>
                 <span><strong>Preço:</strong> R$ {{ product.price }}</span><br>
                 <span><strong>Volume:</strong> {{ product.volume }}</span><br>
                 <span><strong>Quantidade:</strong> {{ product.quantity }} {{ product.unity }}</span><br>
                 <span><strong>Status:</strong> {{ product.status }}</span>
-            </li>
+            </div>
         {% else %}
-            <li>Nenhum produto encontrado.</li>
+        <div class="response-item">
+            Nenhum produto encontrado.
+        </div>
         {% endfor %}
     </ul>
 
