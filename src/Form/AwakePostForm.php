@@ -30,7 +30,7 @@ class AwakePostForm extends FormBase {
     $form['group1']['field_gtin_1'] = [
       '#type' => 'textfield',
       '#title' => $this->t('GTIN 01'),
-      '#default_value' => '7896075300205',
+      '#default_value' => '7896045506910',
       '#required' => TRUE,
     ];
 

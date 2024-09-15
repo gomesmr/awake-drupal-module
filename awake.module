@@ -45,6 +45,8 @@ function awake_theme($existing, $type, $theme, $path) {
         'company' => NULL,
         'user' => NULL,
         'dateTime' => NULL,
+        'errors' => NULL,
+        'recalculateProducts' => NULL,
       ],
       'template' => 'awake-response',
     ],
