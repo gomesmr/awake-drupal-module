@@ -13,14 +13,14 @@ class AwakeMLevaCompareForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
+  public function getFormId(): string {
     return 'awake_mleva_compare_form';
   }
 
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state): array {
     // Primeiro conjunto de campos para GTIN 01 e Preço 01
     $form['group1'] = [
       '#type' => 'fieldset',
@@ -74,7 +74,7 @@ class AwakeMLevaCompareForm extends FormBase {
       '#required' => TRUE,
     ];
 
-    $form['company']['company_localization'] = [
+    $form['company']['localization_field'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Localização da Empresa'),
       '#default_value' => '-22.83512749482224, -45.2265350010767',
@@ -106,14 +106,14 @@ class AwakeMLevaCompareForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state): void {
     // Pegue os valores do formulário
     $gtin1 = $form_state->getValue('field_gtin_1');
     $price1 = $form_state->getValue('field_preco_1');
     $gtin2 = $form_state->getValue('field_gtin_2');
     $price2 = $form_state->getValue('field_preco_2');
     $companyName = $form_state->getValue('company_name');
-    $companyLocalization = $form_state->getValue('company_localization');
+    $localization = $form_state->getValue('localization_field');
     $userName = $form_state->getValue('user_name');
 
     // Monte o payload para a requisição POST
@@ -130,7 +130,7 @@ class AwakeMLevaCompareForm extends FormBase {
       ],
       'company' => [
         'companyName' => $companyName,
-        'localization' => $companyLocalization,
+        'localization' => $localization,
       ],
       'user' => [
         'userName' => $userName,
