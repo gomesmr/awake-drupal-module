@@ -8,13 +8,13 @@ use Drupal\Core\Form\FormStateInterface;
 use Exception;
 use GuzzleHttp\Client;
 
-class AwakePostForm extends FormBase {
+class AwakeMLevaCompareForm extends FormBase {
 
   /**
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'awake_post_form';
+    return 'awake_mleva_compare_form';
   }
 
   /**

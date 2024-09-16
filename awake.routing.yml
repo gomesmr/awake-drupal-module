@@ -1,7 +1,7 @@
 awake.response_page:
   path: '/awake/response'
   defaults:
-    _controller: '\Drupal\awake\Controller\AwakeController::renderResponse'
+    _controller: '\Drupal\awake\Controller\AwakeController::decideResponse'
     _title: 'Resposta Awake'
   requirements:
     _permission: 'access content'
@@ -9,4 +9,13 @@ awake.response_page:
     _custom_theme: awake
     _library: 'awake/styles'
 
-
+awake.recalculate_form:
+  path: '/awake/recalculate'
+  defaults:
+    _form: '\Drupal\awake\Form\AwakeMLevaRecalculateForm'
+    _title: 'Recalculate Products'
+  requirements:
+    _permission: 'access content'
+  options:
+    _custom_theme: awake
+    _library: 'awake/styles'
