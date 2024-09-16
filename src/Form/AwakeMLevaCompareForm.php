@@ -6,9 +6,33 @@ use Drupal;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Exception;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\awake\Client\AwakeClient;
+use Drupal\awake\Helper\AwakeResponseHelper;
 use GuzzleHttp\Client;
 
 class AwakeMLevaCompareForm extends FormBase {
+
+  protected $awakeClient;
+  protected $responseHelper;
+
+  /**
+   * Construtor da classe, injetando os serviços AwakeClient e AwakeResponseHelper.
+   */
+  public function __construct(AwakeClient $awake_client, AwakeResponseHelper $response_helper) {
+    $this->awakeClient = $awake_client;
+    $this->responseHelper = $response_helper;
+  }
+
+  /**
+   * Cria a instância da classe e injeta os serviços via container.
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('awake.client'),
+      $container->get('awake.response_helper')  // Injeta o helper de resposta
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -144,30 +168,11 @@ class AwakeMLevaCompareForm extends FormBase {
         'json' => $payload,
       ]);
 
-      // Verifica a resposta
-      $status_code = $response->getStatusCode();
-      $response_body = $response->getBody()->getContents();
-
-      if ($status_code == 200) {
-        // Armazena a resposta na sessão para ser recuperada depois
-        $response_data = json_decode($response_body, TRUE);
-        Drupal::messenger()->addMessage('Dados enviados com sucesso!');
-        Drupal::request()
-          ->getSession()
-          ->set('awake_response_data', $response_data);
-
-        // Redireciona para a página de exibição
-        $form_state->setRedirect('awake.response_page');
-      }
-      else {
-        $this->messenger()
-          ->addError($this->t('Erro ao enviar os dados. Status code: @code', ['@code' => $status_code]));
-      }
+      // Verifica a resposta usando a classe auxiliar
+      $this->responseHelper->verificaAResposta($response, $form_state);
     }
     catch (Exception $e) {
-      $this->messenger()
-        ->addError($this->t('Erro ao conectar com o serviço: @message', ['@message' => $e->getMessage()]));
+      $this->messenger()->addError($this->t('Erro ao conectar com o serviço: @message', ['@message' => $e->getMessage()]));
     }
   }
-
 }

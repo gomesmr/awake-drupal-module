@@ -8,3 +8,6 @@ services:
     arguments: ['@awake.client', '@messenger']
     tags:
       - { name: form, form_id: awake_mleva_recalculate_form }
+
+  awake.response_helper:
+    class: Drupal\awake\Helper\AwakeResponseHelper
