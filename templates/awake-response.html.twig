@@ -1,10 +1,12 @@
 <div class="response-container">
     <h3 class="response-header">Detalhes da Resposta</h3>
+
+    <!-- Produtos -->
     <h4 class="response-subheader">Produtos</h4>
     <ul class="response-list">
         {% for product in products %}
             <div class="response-item">
-                <span><h2> {{ product.description }}</h2></span><br>
+                <span><h2>{{ product.description }}</h2></span><br>
                 <span><h3><strong>GTIN:</strong> {{ product.gtin }}</h3></span><br>
                 <span><strong>Índice:</strong> {{ product.index }}</span><br>
                 <span><strong>Preço:</strong> R$ {{ product.price }}</span><br>
@@ -13,17 +15,56 @@
                 <span><strong>Status:</strong> {{ product.status }}</span>
             </div>
         {% else %}
-        <div class="response-item">
-            Nenhum produto encontrado.
-        </div>
+            <div class="response-item">
+                Nenhum produto encontrado.
+            </div>
         {% endfor %}
     </ul>
 
+    <!-- Erros -->
+    {% if errors is not empty %}
+        <h4 class="response-subheader">Erros</h4>
+        <ul>
+            {% for error in errors %}
+                <li><strong>Erro:</strong> {{ error }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <ul>
+            <li>Nenhum erro encontrado.</li>
+        </ul>
+    {% endif %}
+
+    <!-- Empresa -->
     <h4 class="response-subheader">Empresa</h4>
-    <p><strong>Nome:</strong> {{ company.companyName }}</p>
+    <p>{{ company.companyName }}</p>
 
+    <!-- Usuário -->
     <h4 class="response-subheader">Usuário</h4>
-    <p><strong>Nome:</strong> {{ user.userName }}</p>
+    <p>{{ user.userName }}</p>
 
+    <!-- Data e Hora -->
     <p><strong>Data e Hora:</strong> {{ dateTime }}</p>
+
+    <!-- Produtos to Recalculate -->
+    {% if recalculateProducts is not empty %}
+    <h4 class="response-subheader">Recalcular</h4>
+    <ul class="response-list">
+        {% for recalculateProduct in recalculateProducts %}
+            <div class="response-item">
+                <span><h2>{{ recalculateProduct.description }}</h2></span><br>
+                <span><h3><strong>GTIN:</strong> {{ recalculateProduct.gtin }}</h3></span><br>
+                <span><strong>Índice:</strong> {{ recalculateProduct.index }}</span><br>
+                <span><strong>Preço:</strong> R$ {{ recalculateProduct.price }}</span><br>
+                <span><strong>Volume:</strong> {{ recalculateProduct.volume }}</span><br>
+                <span><strong>Quantidade:</strong> {{ recalculateProduct.quantity }} {{ recalculateProduct.unity }}</span><br>
+                <span><strong>Status:</strong> {{ recalculateProduct.status }}</span>
+            </div>
+        {% else %}
+            <div class="response-item">
+                Nenhum produto encontrado.
+            </div>
+        {% endfor %}
+    </ul>
+    {% endif %}
 </div>

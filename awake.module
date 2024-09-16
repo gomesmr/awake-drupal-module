@@ -3,7 +3,7 @@
  * @file
  *  API module for making external API requests.
  */
-function awake_response($url, $method = 'GET', $params = array()) {
+function awake_response($url, $method = 'GET', $params = array()): bool|array|string {
   $methods = ['POST', 'GET', 'PUT', 'DELETE'];
   $result = array();
 
@@ -18,7 +18,7 @@ function awake_response($url, $method = 'GET', $params = array()) {
   return $result;
 }
 
-function awake_call_request($requesturl, $method, $params = array()) {
+function awake_call_request($requesturl, $method, $params = array()): bool|string {
   try {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $requesturl);
@@ -37,7 +37,7 @@ function awake_call_request($requesturl, $method, $params = array()) {
 /**
  * Implements hook_theme().
  */
-function awake_theme($existing, $type, $theme, $path) {
+function awake_theme($existing, $type, $theme, $path): array {
   return [
     'awake_response' => [
       'variables' => [
@@ -45,6 +45,8 @@ function awake_theme($existing, $type, $theme, $path) {
         'company' => NULL,
         'user' => NULL,
         'dateTime' => NULL,
+        'errors' => NULL,
+        'recalculateProducts' => NULL,
       ],
       'template' => 'awake-response',
     ],

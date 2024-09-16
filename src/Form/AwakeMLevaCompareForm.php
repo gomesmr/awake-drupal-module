@@ -6,21 +6,45 @@ use Drupal;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Exception;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\awake\Client\AwakeClient;
+use Drupal\awake\Helper\AwakeResponseHelper;
 use GuzzleHttp\Client;
 
-class AwakePostForm extends FormBase {
+class AwakeMLevaCompareForm extends FormBase {
+
+  protected $awakeClient;
+  protected $responseHelper;
 
   /**
-   * {@inheritdoc}
+   * Construtor da classe, injetando os serviços AwakeClient e AwakeResponseHelper.
    */
-  public function getFormId() {
-    return 'awake_post_form';
+  public function __construct(AwakeClient $awake_client, AwakeResponseHelper $response_helper) {
+    $this->awakeClient = $awake_client;
+    $this->responseHelper = $response_helper;
+  }
+
+  /**
+   * Cria a instância da classe e injeta os serviços via container.
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('awake.client'),
+      $container->get('awake.response_helper')  // Injeta o helper de resposta
+    );
   }
 
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state) {
+  public function getFormId(): string {
+    return 'awake_mleva_compare_form';
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function buildForm(array $form, FormStateInterface $form_state): array {
     // Primeiro conjunto de campos para GTIN 01 e Preço 01
     $form['group1'] = [
       '#type' => 'fieldset',
@@ -30,7 +54,7 @@ class AwakePostForm extends FormBase {
     $form['group1']['field_gtin_1'] = [
       '#type' => 'textfield',
       '#title' => $this->t('GTIN 01'),
-      '#default_value' => '7896075300205',
+      '#default_value' => '7896045506910',
       '#required' => TRUE,
     ];
 
@@ -74,7 +98,7 @@ class AwakePostForm extends FormBase {
       '#required' => TRUE,
     ];
 
-    $form['company']['company_localization'] = [
+    $form['company']['localization_field'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Localização da Empresa'),
       '#default_value' => '-22.83512749482224, -45.2265350010767',
@@ -106,14 +130,14 @@ class AwakePostForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state): void {
     // Pegue os valores do formulário
     $gtin1 = $form_state->getValue('field_gtin_1');
     $price1 = $form_state->getValue('field_preco_1');
     $gtin2 = $form_state->getValue('field_gtin_2');
     $price2 = $form_state->getValue('field_preco_2');
     $companyName = $form_state->getValue('company_name');
-    $companyLocalization = $form_state->getValue('company_localization');
+    $localization = $form_state->getValue('localization_field');
     $userName = $form_state->getValue('user_name');
 
     // Monte o payload para a requisição POST
@@ -130,7 +154,7 @@ class AwakePostForm extends FormBase {
       ],
       'company' => [
         'companyName' => $companyName,
-        'localization' => $companyLocalization,
+        'localization' => $localization,
       ],
       'user' => [
         'userName' => $userName,
@@ -144,30 +168,11 @@ class AwakePostForm extends FormBase {
         'json' => $payload,
       ]);
 
-      // Verifica a resposta
-      $status_code = $response->getStatusCode();
-      $response_body = $response->getBody()->getContents();
-
-      if ($status_code == 200) {
-        // Armazena a resposta na sessão para ser recuperada depois
-        $response_data = json_decode($response_body, TRUE);
-        Drupal::messenger()->addMessage('Dados enviados com sucesso!');
-        Drupal::request()
-          ->getSession()
-          ->set('awake_response_data', $response_data);
-
-        // Redireciona para a página de exibição
-        $form_state->setRedirect('awake.response_page');
-      }
-      else {
-        $this->messenger()
-          ->addError($this->t('Erro ao enviar os dados. Status code: @code', ['@code' => $status_code]));
-      }
+      // Verifica a resposta usando a classe auxiliar
+      $this->responseHelper->verificaAResposta($response, $form_state);
     }
     catch (Exception $e) {
-      $this->messenger()
-        ->addError($this->t('Erro ao conectar com o serviço: @message', ['@message' => $e->getMessage()]));
+      $this->messenger()->addError($this->t('Erro ao conectar com o serviço: @message', ['@message' => $e->getMessage()]));
     }
   }
-
 }
