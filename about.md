@@ -1,3 +1,4 @@
+```json
 Módulo Awake
 │
 ├── awake.info.yml
@@ -66,10 +67,12 @@ Módulo Awake
 │   └── User 
 │       └── Armazena dados do usuário
 │
-└── Template
-    └── awake-response.html.twig 
-        └── Exibe os dados da resposta da API, incluindo produtos, erros e informações da empresa/usuário
-
+├── Template
+│   └── awake-response.html.twig 
+│       └── Exibe os dados da resposta da API, incluindo produtos, erros e informações da empresa/usuário
+│
+└──
+```
 
 Vamos analisar a função de cada arquivo do módulo **Awake** em Drupal:
 
