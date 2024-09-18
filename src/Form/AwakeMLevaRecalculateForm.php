@@ -245,6 +245,7 @@ class AwakeMLevaRecalculateForm extends FormBase {
       '#value' => $this->t('Recalculate'),
     ];
 
+    Drupal::logger('awake')->info('Formulario: @form', ['@form' => json_encode($form)]);
     return $form;
   }
 
@@ -253,10 +254,10 @@ class AwakeMLevaRecalculateForm extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state): void {
     // Coleta os dados do formulário.
-    $products = $form_state->getValue('products');
+    $products = $form_state->getValue('products') ?? [];
     Drupal::logger('awake')->info('Produtos recebidos: @products', ['@products' => json_encode($products)]);
 
-    $products_recalculate = $form_state->getValue('products_recalculate');
+    $products_recalculate = $form_state->getValue('products_recalculate') ?? [];
     Drupal::logger('awake')->info('Produtos recalcular: @products_recalculate', ['@products_recalculate' => json_encode($products_recalculate)]);
 
     $company_name = $form_state->getValue('company_name');
@@ -268,9 +269,9 @@ class AwakeMLevaRecalculateForm extends FormBase {
     $date_time = date('Y-m-d H:i:s');  // Pega a data e hora atual
     Drupal::logger('awake')->info('Data e Hora: @data_hora', ['@data_hora' => $date_time]);
 
-    // Verifica se a variável $products e $products_recalculate são arrays.
+    // Verifica se a variável $products e $products_recalculate são arrays e permite que $products seja um array vazio.
     if (!is_array($products)) {
-      $this->messenger()->addError($this->t('No products data found.'));
+      $this->messenger()->addError($this->t('No valid products data found.'));
       return;
     }
 
@@ -279,9 +280,9 @@ class AwakeMLevaRecalculateForm extends FormBase {
       return;
     }
 
-    // Monta o payload.
+    // Monta o payload, garantindo que o array vazio de 'products' seja passado corretamente.
     $payload = [
-      'products' => array_values($products),
+      'products' => array_values($products),  // Pode ser um array vazio
       'products_recalculate' => array_values($products_recalculate),
       'company' => [
         'companyName' => $company_name,
@@ -309,4 +310,5 @@ class AwakeMLevaRecalculateForm extends FormBase {
       $this->messenger()->addError($this->t('Erro ao conectar com o serviço: @message', ['@message' => $e->getMessage()]));
     }
   }
+
 }
