@@ -52,6 +52,8 @@ class AwakeMLevaRecalculateForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state): array {
     // Adiciona a biblioteca de estilos do módulo
     $form['#attached']['library'][] = 'awake/styles';
+    // Adiciona a biblioteca de máscara de preço
+    $form['#attached']['library'][] = 'awake/js';
 
     // Recupera os produtos recalculáveis e em análise da sessão.
     $response_data = Drupal::request()

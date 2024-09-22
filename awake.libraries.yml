@@ -2,3 +2,8 @@ awake.styles:
   css:
     theme:
       css/awake-style.css: { }
+  js:
+    js/awake-price-mask.js: { }
+  dependencies:
+    - core/jquery
+    - core/drupal
