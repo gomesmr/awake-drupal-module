@@ -3,10 +3,15 @@
 namespace Drupal\awake\Model;
 
 class Product {
+
   public $gtin;
+
   public $description;
+
   public $price;
+
   public $quantity;
+
   public $status;
 
   public function __construct($data) {
@@ -16,4 +21,5 @@ class Product {
     $this->quantity = $data['quantity'];
     $this->status = $data['status'];
   }
+
 }

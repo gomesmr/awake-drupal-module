@@ -1,12 +1,19 @@
 <?php
+
 namespace Drupal\awake\Model;
 
 class ApiResponse {
+
   public $products;
+
   public $errors;
+
   public $company;
+
   public $user;
+
   public $dateTime;
+
   public $recalculateProducts;
 
   public function __construct($products, $errors, $company, $user, $dateTime, $recalculateProducts) {
@@ -17,4 +24,5 @@ class ApiResponse {
     $this->dateTime = $dateTime;
     $this->recalculateProducts = $recalculateProducts;
   }
+
 }

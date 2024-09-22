@@ -9,4 +9,4 @@ libraries:
   awake.styles:
     css:
       theme:
-        css/style.css: {}
+        css/style.css: { }

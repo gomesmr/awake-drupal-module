@@ -3,21 +3,26 @@
 namespace Drupal\awake\Form;
 
 use Drupal;
+use Drupal\awake\Client\AwakeClient;
+use Drupal\awake\Helper\AwakeResponseHelper;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Exception;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\awake\Client\AwakeClient;
-use Drupal\awake\Helper\AwakeResponseHelper;
 use GuzzleHttp\Client;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
+/**
+ * @method t(string $string)
+ */
 class AwakeMLevaRecalculateForm extends FormBase {
 
   protected $awakeClient;
+
   protected $responseHelper;
 
   /**
-   * Construtor da classe, injetando os serviços AwakeClient e AwakeResponseHelper.
+   * Construtor da classe, injetando os serviços AwakeClient e
+   * AwakeResponseHelper.
    */
   public function __construct(AwakeClient $awake_client, AwakeResponseHelper $response_helper) {
     $this->awakeClient = $awake_client;
@@ -46,42 +51,45 @@ class AwakeMLevaRecalculateForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state): array {
     // Recupera os produtos recalculáveis e em análise da sessão.
-    $response_data = Drupal::request()->getSession()->get('awake_response_data');
-    Drupal::logger('awake')->info('Dados da sessão recuperados: @response_data', ['@response_data' => json_encode($response_data)]);
+    $response_data = Drupal::request()
+      ->getSession()
+      ->get('awake_response_data');
+    Drupal::logger('awake')
+      ->info('Dados da sessão recuperados: @response_data', ['@response_data' => json_encode($response_data)]);
 
     // Recupera os arrays 'products' e 'products_recalculate'.
     $products = $response_data['products'] ?? [];
-    Drupal::logger('awake')->info('Produtos em análise recuperados: @products', ['@products' => json_encode($products)]);
+    Drupal::logger('awake')
+      ->info('Produtos em análise recuperados: @products', ['@products' => json_encode($products)]);
 
     $products_recalculate = $response_data['recalculateProducts'] ?? [];
-    Drupal::logger('awake')->info('Produtos para recalculação recuperados: @products_recalculate', ['@products_recalculate' => json_encode($products_recalculate)]);
+    Drupal::logger('awake')
+      ->info('Produtos para recalculação recuperados: @products_recalculate', ['@products_recalculate' => json_encode($products_recalculate)]);
 
     $company = $response_data['company'] ?? [];
 
     $user = $response_data['user'] ?? [];
 
-    // Se não houver produtos, exibe uma mensagem de erro.
     if (empty($products) && empty($products_recalculate)) {
-      $this->messenger()->addError($this->t('No products to recalculate or analyze.'));
+      $this->messenger()
+        ->addError($this->t('No products to recalculate or analyze.'));
       return [];
     }
 
-    // Adicionar campos de informações da empresa
     $form['company_info'] = [
       '#type' => 'fieldset',
-      '#title' => $this->t('Informações da Empresa'),
+      '#title' => $this->t('Dados do Comércio'),
     ];
 
     $form['company_info']['company_name'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Nome da Empresa'),
+      '#title' => $this->t('Onde estou comprando'),
       '#default_value' => $company['companyName'] ?? '',
       '#required' => TRUE,
       '#attributes' => ['readonly' => 'readonly'],
       '#id' => 'edit-company-name',
     ];
 
-    // Adicionar campos de informações do usuário
     $form['user_info'] = [
       '#type' => 'fieldset',
       '#title' => $this->t('Informações do Usuário'),
@@ -96,10 +104,9 @@ class AwakeMLevaRecalculateForm extends FormBase {
       '#id' => 'edit-user-name',
     ];
 
-    // Adicionar produtos em análise
     $form['products'] = [
       '#type' => 'container',
-      '#parents' => ['products'],  // Define os parents para os dados do array
+      '#parents' => ['products'],
       '#title' => $this->t('Produtos em Análise'),
     ];
 
@@ -111,35 +118,40 @@ class AwakeMLevaRecalculateForm extends FormBase {
 
       $form['products'][$index]['gtin'] = [
         '#type' => 'textfield',
-        '#title' => $this->t('GTIN'),
+        '#title' => $this->t('Código de Barras'),
         '#default_value' => $product['gtin'],
+        '#description' => $this->t('Código de barras do produto.'),
         '#required' => TRUE,
         '#attributes' => ['readonly' => 'readonly'],
-        '#parents' => ['products', $index, 'gtin'],  // Corrige o aninhamento
+        '#parents' => ['products', $index, 'gtin'],
       ];
 
       $form['products'][$index]['description'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Descrição'),
         '#default_value' => $product['description'],
+        '#description' => $this->t('Descrição detalhada do produto.'),
+        '#attributes' => ['readonly' => 'readonly'],
         '#required' => FALSE,
-        '#parents' => ['products', $index, 'description'],  // Corrige o aninhamento
+        '#parents' => ['products', $index, 'description'],
       ];
 
       $form['products'][$index]['price'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Preço'),
         '#default_value' => $product['price'],
+        '#description' => $this->t('Preço do produto.'),
+        '#attributes' => ['readonly' => 'readonly'],
         '#required' => TRUE,
-        '#parents' => ['products', $index, 'price'],  // Corrige o aninhamento
+        '#parents' => ['products', $index, 'price'],
       ];
 
-      // Continue para os outros campos (volume, quantity, unity, status)
       $form['products'][$index]['volume'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Volume'),
         '#default_value' => $product['volume'],
-        '#required' => FALSE,
+        '#description' => $this->t('Volume do produto.'),
+        '#required' => TRUE,
         '#parents' => ['products', $index, 'volume'],
       ];
 
@@ -147,7 +159,8 @@ class AwakeMLevaRecalculateForm extends FormBase {
         '#type' => 'textfield',
         '#title' => $this->t('Quantidade'),
         '#default_value' => $product['quantity'],
-        '#required' => FALSE,
+        '#description' => $this->t('Quantidade do produto.'),
+        '#required' => TRUE,
         '#parents' => ['products', $index, 'quantity'],
       ];
 
@@ -155,63 +168,68 @@ class AwakeMLevaRecalculateForm extends FormBase {
         '#type' => 'textfield',
         '#title' => $this->t('Unidade'),
         '#default_value' => $product['unity'],
-        '#required' => FALSE,
+        '#description' => $this->t('Unidade de medida do produto.'),
+        '#required' => TRUE,
         '#parents' => ['products', $index, 'unity'],
       ];
 
       $form['products'][$index]['status'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('Status'),
+        '#type' => 'hidden',
         '#default_value' => $product['status'],
-        '#attributes' => ['readonly' => 'readonly'],
         '#parents' => ['products', $index, 'status'],
       ];
     }
 
-    // Adicionar produtos para recalculação
     $form['products_recalculate'] = [
       '#type' => 'container',
-      '#parents' => ['products_recalculate'],  // Define os parents para os dados do array
-      '#title' => $this->t('Produtos para Recalcular'),
+      '#parents' => ['products_recalculate'],
+      '#title' => $this->t('Produtos que precisam de sua ajuda :)'),
+      '#description' => $this->t('Os produtos abaixo têm dados que precisam ser completados.'),
+
     ];
 
     foreach ($products_recalculate as $index => $product) {
       $form['products_recalculate'][$index] = [
         '#type' => 'fieldset',
-        '#title' => $this->t('Produto Recalcular @number', ['@number' => $index + 1]),
+        '#title' => $this->t('Produto @number', ['@number' => $index + 1]),
       ];
 
       $form['products_recalculate'][$index]['gtin'] = [
         '#type' => 'textfield',
-        '#title' => $this->t('GTIN'),
+        '#title' => $this->t('Código de Barras'),
         '#default_value' => $product['gtin'],
+        '#description' => $this->t('Código de barras do produto.'),
         '#required' => TRUE,
         '#attributes' => ['readonly' => 'readonly'],
-        '#parents' => ['products_recalculate', $index, 'gtin'],  // Corrige o aninhamento
+        '#parents' => ['products_recalculate', $index, 'gtin'],
       ];
 
       $form['products_recalculate'][$index]['description'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Descrição'),
         '#default_value' => $product['description'],
-        '#required' => FALSE,
-        '#parents' => ['products_recalculate', $index, 'description'],  // Corrige o aninhamento
+        '#description' => $this->t('Descrição do produto.'),
+        '#required' => TRUE,
+        '#attributes' => ['readonly' => 'readonly'],
+        '#parents' => ['products_recalculate', $index, 'description'],
       ];
 
       $form['products_recalculate'][$index]['price'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Preço'),
         '#default_value' => $product['price'],
+        '#description' => $this->t('Preço do produto.'),
         '#required' => TRUE,
-        '#parents' => ['products_recalculate', $index, 'price'],  // Corrige o aninhamento
+        '#attributes' => ['readonly' => 'readonly'],
+        '#parents' => ['products_recalculate', $index, 'price'],
       ];
 
-      // Continue para os outros campos (volume, quantity, unity, status)
       $form['products_recalculate'][$index]['volume'] = [
         '#type' => 'textfield',
         '#title' => $this->t('Volume'),
         '#default_value' => $product['volume'],
-        '#required' => FALSE,
+        '#description' => $this->t('Volume do produto.'),
+        '#required' => TRUE,
         '#parents' => ['products_recalculate', $index, 'volume'],
       ];
 
@@ -219,7 +237,8 @@ class AwakeMLevaRecalculateForm extends FormBase {
         '#type' => 'textfield',
         '#title' => $this->t('Quantidade'),
         '#default_value' => $product['quantity'],
-        '#required' => FALSE,
+        '#description' => $this->t('Número de produtos contidos nessa unidade de venda.'),
+        '#required' => TRUE,
         '#parents' => ['products_recalculate', $index, 'quantity'],
       ];
 
@@ -227,15 +246,14 @@ class AwakeMLevaRecalculateForm extends FormBase {
         '#type' => 'textfield',
         '#title' => $this->t('Unidade'),
         '#default_value' => $product['unity'],
-        '#required' => FALSE,
+        '#description' => $this->t('Unidade de medida do produto. Unidades de volume: L , ML. Unidades de comprimento: M, CM. Unidades de massa: G, KG, MG. Unidade de quantidade: U, DOSE.'),
+        '#required' => TRUE,
         '#parents' => ['products_recalculate', $index, 'unity'],
       ];
 
       $form['products_recalculate'][$index]['status'] = [
-        '#type' => 'textfield',
-        '#title' => $this->t('Status'),
+        '#type' => 'hidden',
         '#default_value' => $product['status'],
-        '#attributes' => ['readonly' => 'readonly'],
         '#parents' => ['products_recalculate', $index, 'status'],
       ];
     }
@@ -245,7 +263,8 @@ class AwakeMLevaRecalculateForm extends FormBase {
       '#value' => $this->t('Recalculate'),
     ];
 
-    Drupal::logger('awake')->info('Formulario: @form', ['@form' => json_encode($form)]);
+    Drupal::logger('awake')
+      ->info('Formulario: @form', ['@form' => json_encode($form)]);
     return $form;
   }
 
@@ -255,21 +274,25 @@ class AwakeMLevaRecalculateForm extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state): void {
     // Coleta os dados do formulário.
     $products = $form_state->getValue('products') ?? [];
-    Drupal::logger('awake')->info('Produtos recebidos: @products', ['@products' => json_encode($products)]);
+    Drupal::logger('awake')
+      ->info('Produtos recebidos: @products', ['@products' => json_encode($products)]);
 
     $products_recalculate = $form_state->getValue('products_recalculate') ?? [];
-    Drupal::logger('awake')->info('Produtos recalcular: @products_recalculate', ['@products_recalculate' => json_encode($products_recalculate)]);
+    Drupal::logger('awake')
+      ->info('Produtos recalcular: @products_recalculate', ['@products_recalculate' => json_encode($products_recalculate)]);
 
     $company_name = $form_state->getValue('company_name');
-    Drupal::logger('awake')->info('Nome da empresa recebido: @company_name', ['@company_name' => $company_name]);
+    Drupal::logger('awake')
+      ->info('Nome da empresa recebido: @company_name', ['@company_name' => $company_name]);
 
     $user_name = $form_state->getValue('user_name');
-    Drupal::logger('awake')->info('Nome do usuário recebido: @user_name', ['@user_name' => $user_name]);
+    Drupal::logger('awake')
+      ->info('Nome do usuário recebido: @user_name', ['@user_name' => $user_name]);
 
     $date_time = date('Y-m-d H:i:s');  // Pega a data e hora atual
-    Drupal::logger('awake')->info('Data e Hora: @data_hora', ['@data_hora' => $date_time]);
+    Drupal::logger('awake')
+      ->info('Data e Hora: @data_hora', ['@data_hora' => $date_time]);
 
-    // Verifica se a variável $products e $products_recalculate são arrays e permite que $products seja um array vazio.
     if (!is_array($products)) {
       $this->messenger()->addError($this->t('No valid products data found.'));
       return;
@@ -280,9 +303,8 @@ class AwakeMLevaRecalculateForm extends FormBase {
       return;
     }
 
-    // Monta o payload, garantindo que o array vazio de 'products' seja passado corretamente.
     $payload = [
-      'products' => array_values($products),  // Pode ser um array vazio
+      'products' => array_values($products),
       'products_recalculate' => array_values($products_recalculate),
       'company' => [
         'companyName' => $company_name,
@@ -294,20 +316,22 @@ class AwakeMLevaRecalculateForm extends FormBase {
     ];
 
     // Log do payload antes de enviar a requisição.
-    Drupal::logger('awake')->info('Payload enviado: @payload', ['@payload' => json_encode($payload)]);
+    Drupal::logger('awake')
+      ->info('Payload enviado: @payload', ['@payload' => json_encode($payload)]);
 
     // Faça a requisição POST usando Guzzle
     $client = new Client();
     try {
-      $response = $client->post('http://mleva-api:8080/mleva/recalculate', [
+      $response = $client->post('https://mleva-04f05d539d3b.herokuapp.com/mleva/recalculate', [
         'json' => $payload,
       ]);
 
       // Verifica a resposta usando a classe auxiliar
-      $this->responseHelper->verificaAResposta($response, $form_state);
+      $this->responseHelper->processResponse($response, $form_state);
     }
     catch (Exception $e) {
-      $this->messenger()->addError($this->t('Erro ao conectar com o serviço: @message', ['@message' => $e->getMessage()]));
+      $this->messenger()
+        ->addError($this->t('Erro ao conectar com o serviço: @message', ['@message' => $e->getMessage()]));
     }
   }
 
