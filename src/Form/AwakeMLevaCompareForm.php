@@ -53,6 +53,9 @@ class AwakeMLevaCompareForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state): array {
+    // Adiciona a biblioteca de estilos do módulo
+    $form['#attached']['library'][] = 'awake/styles';
+
     // Primeiro conjunto de campos para GTIN 01 e Preço 01
     $form['group1'] = [
       '#type' => 'fieldset',

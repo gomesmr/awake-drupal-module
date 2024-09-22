@@ -28,7 +28,7 @@ Módulo Awake
 │       └── Usa AwakeMLevaRecalculateForm
 │
 ├── CSS (Estilo)
-│   └── style.css
+│   └── awake-style.css
 │       └── Estilos aplicados ao template awake-response
 │
 ├── Classes de Cliente
@@ -96,7 +96,7 @@ como:
 
 Define as bibliotecas (assets) que o módulo utilizará:
 
-- **styles**: Inclui o arquivo CSS `style.css`, responsável por definir os
+- **styles**: Inclui o arquivo CSS `awake-style.css`, responsável por definir os
   estilos da página.
 
 ### 3. **awake.module**
@@ -128,7 +128,7 @@ Define serviços customizados usados pelo módulo:
 - **awake.form_mleva_recalculate**: Serviço responsável pelo formulário de
   recalculação, utilizando o cliente `AwakeClient`.
 
-### 6. **style.css**
+### 6. **awake-style.css**
 
 Arquivo CSS utilizado para estilizar os elementos renderizados na página, como o
 container da resposta, itens de produtos, erros e informações gerais.
