@@ -1,11 +1,12 @@
 <?php
+
 /**
  * @file
  *  API module for making external API requests.
  */
-function awake_response($url, $method = 'GET', $params = array()): bool|array|string {
+function awake_response($url, $method = 'GET', $params = []): bool|array|string {
   $methods = ['POST', 'GET', 'PUT', 'DELETE'];
-  $result = array();
+  $result = [];
 
   if (empty($url) || !in_array(strtoupper($method), $methods)) {
     return "Invalid method or URL";
@@ -18,7 +19,7 @@ function awake_response($url, $method = 'GET', $params = array()): bool|array|st
   return $result;
 }
 
-function awake_call_request($requesturl, $method, $params = array()): bool|string {
+function awake_call_request($requesturl, $method, $params = []): bool|string {
   try {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $requesturl);
@@ -29,7 +30,8 @@ function awake_call_request($requesturl, $method, $params = array()): bool|strin
     curl_close($ch);
 
     return $result;
-  } catch (Exception $e) {
+  }
+  catch (Exception $e) {
     return $e->getMessage();
   }
 }

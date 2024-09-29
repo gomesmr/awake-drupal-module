@@ -3,25 +3,32 @@
 namespace Drupal\awake\Form;
 
 use Drupal;
-use Drupal\Core\Form\FormBase;
-use Drupal\Core\Form\FormStateInterface;
-use Exception;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\awake\Client\AwakeClient;
 use Drupal\awake\Helper\AwakeResponseHelper;
+use Drupal\Core\Form\FormBase;
+use Drupal\Core\Form\FormStateInterface;
 use GuzzleHttp\Client;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
+/**
+ * @method t(string $string)
+ */
 class AwakeMLevaCompareForm extends FormBase {
 
   protected $awakeClient;
+
   protected $responseHelper;
 
+  protected $currentUser;
+
   /**
-   * Construtor da classe, injetando os serviços AwakeClient e AwakeResponseHelper.
+   * Construtor da classe, injetando os serviços AwakeClient,
+   * AwakeResponseHelper e current_user.
    */
-  public function __construct(AwakeClient $awake_client, AwakeResponseHelper $response_helper) {
+  public function __construct(AwakeClient $awake_client, AwakeResponseHelper $response_helper, $current_user) {
     $this->awakeClient = $awake_client;
     $this->responseHelper = $response_helper;
+    $this->currentUser = $current_user;
   }
 
   /**
@@ -30,7 +37,8 @@ class AwakeMLevaCompareForm extends FormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('awake.client'),
-      $container->get('awake.response_helper')  // Injeta o helper de resposta
+      $container->get('awake.response_helper'),  // Injeta o helper de resposta
+      $container->get('current_user')  // Injeta o serviço de usuário atual
     );
   }
 
@@ -45,76 +53,91 @@ class AwakeMLevaCompareForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state): array {
-    // Primeiro conjunto de campos para GTIN 01 e Preço 01
-    $form['group1'] = [
-      '#type' => 'fieldset',
-      '#title' => $this->t('GTIN 01 e Preço 01'),
+    $form['#attached']['library'][] = 'awake/styles';
+    $form['#attached']['library'][] = 'awake/js';
+
+    // Verifica quantos conjuntos de campos já foram adicionados
+    $num_products = $form_state->get('num_products');
+    if ($num_products === NULL) {
+      $num_products = 2; // Começa com 2 conjuntos de campos
+      $form_state->set('num_products', $num_products);
+    }
+
+    // Loop para adicionar os conjuntos de campos dinamicamente
+    for ($i = 1; $i <= $num_products; $i++) {
+      $form["group{$i}"] = [
+        '#type' => 'fieldset',
+        '#title' => $this->t("Cód Barras {$i} e Preço {$i}"),
+      ];
+
+      $form["group{$i}"]["field_gtin_{$i}"] = [
+        '#type' => 'textfield',
+        '#title' => $this->t("Código de Barras {$i}"),
+        '#default_value' => '',
+        '#description' => $this->t("Informe o código de barras do produto {$i} que deseja comparar."),
+        '#required' => TRUE,
+      ];
+
+      $form["group{$i}"]["field_preco_{$i}"] = [
+        '#type' => 'textfield',
+        '#title' => $this->t("Preço {$i}"),
+        '#default_value' => '',
+        '#description' => $this->t("Informe o preço do produto {$i} para a comparação."),
+        '#required' => TRUE,
+      ];
+    }
+
+    // Botão para adicionar mais conjuntos de campos
+    $form['add_more'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Adicionar mais produtos'),
+      '#submit' => ['::addMoreProducts'],
+      '#ajax' => [
+        'callback' => '::ajaxCallback',
+        'wrapper' => 'products-wrapper',
+      ],
     ];
 
-    $form['group1']['field_gtin_1'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('GTIN 01'),
-      '#default_value' => '7896045506910',
-      '#required' => TRUE,
-    ];
-
-    $form['group1']['field_preco_1'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Preço 01'),
-      '#default_value' => '37',
-      '#required' => TRUE,
-    ];
-
-    // Segundo conjunto de campos para GTIN 02 e Preço 02
-    $form['group2'] = [
-      '#type' => 'fieldset',
-      '#title' => $this->t('GTIN 02 e Preço 02'),
-    ];
-
-    $form['group2']['field_gtin_2'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('GTIN 02'),
-      '#default_value' => '7898955352168',
-      '#required' => TRUE,
-    ];
-
-    $form['group2']['field_preco_2'] = [
-      '#type' => 'number',
-      '#title' => $this->t('Preço 02'),
-      '#default_value' => '23',
-      '#required' => TRUE,
-    ];
+    // Wrapper para os campos de produtos
+    $form['#prefix'] = '<div id="products-wrapper">';
+    $form['#suffix'] = '</div>';
 
     // Campos para informações da empresa
     $form['company'] = [
       '#type' => 'fieldset',
-      '#title' => $this->t('Informações da Empresa'),
+      '#title' => $this->t('Dados do Comércio'),
     ];
 
     $form['company']['company_name'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Nome da Empresa'),
-      '#default_value' => 'Varejão',
-      '#required' => TRUE,
+      '#title' => $this->t('Onde estou comprando'),
+      '#default_value' => '',
+      '#description' => $this->t('Informe o nome do comércio onde está realizando a compra.'),
+      '#required' => FALSE,
     ];
 
     $form['company']['localization_field'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Localização da Empresa'),
-      '#default_value' => '-22.83512749482224, -45.2265350010767',
-      '#required' => TRUE,
+      '#title' => $this->t('Estou em...'),
+      '#default_value' => '',
+      '#description' => $this->t('Informe a localização do comércio, caso seja relevante.'),
+      '#required' => FALSE,
     ];
 
-    // Campo para o nome do usuário
+    // Campo para o nome do usuário (preenchido automaticamente)
     $form['user'] = [
       '#type' => 'fieldset',
       '#title' => $this->t('Informações do Usuário'),
     ];
 
+    // Obtenha o nome do usuário atual e preencha o campo automaticamente
+    $currentUserName = $this->currentUser->getDisplayName();
+
     $form['user']['user_name'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Nome do Usuário'),
-      '#default_value' => 'lobsom',
+      '#default_value' => $currentUserName,
+      '#description' => $this->t('Nome do usuário autenticado no sistema.'),
       '#required' => TRUE,
     ];
 
@@ -127,31 +150,42 @@ class AwakeMLevaCompareForm extends FormBase {
     return $form;
   }
 
+  public function addMoreProducts(array &$form, FormStateInterface $form_state) {
+    // Incrementa o número de conjuntos de campos
+    $num_products = $form_state->get('num_products');
+    $form_state->set('num_products', $num_products + 1);
+
+    // Rebuild the form to reflect the new number of products
+    $form_state->setRebuild();
+  }
+
+  public function ajaxCallback(array &$form, FormStateInterface $form_state) {
+    return $form;
+  }
+
   /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state): void {
-    // Pegue os valores do formulário
-    $gtin1 = $form_state->getValue('field_gtin_1');
-    $price1 = $form_state->getValue('field_preco_1');
-    $gtin2 = $form_state->getValue('field_gtin_2');
-    $price2 = $form_state->getValue('field_preco_2');
+    $num_products = $form_state->get('num_products');
+    $products = [];
+
+    for ($i = 1; $i <= $num_products; $i++) {
+      $gtin = $form_state->getValue("field_gtin_{$i}");
+      $price = $form_state->getValue("field_preco_{$i}");
+      $products[] = [
+        'gtin' => $gtin,
+        'price' => $price,
+      ];
+    }
+
     $companyName = $form_state->getValue('company_name');
     $localization = $form_state->getValue('localization_field');
     $userName = $form_state->getValue('user_name');
 
     // Monte o payload para a requisição POST
     $payload = [
-      'products' => [
-        [
-          'gtin' => $gtin1,
-          'price' => $price1,
-        ],
-        [
-          'gtin' => $gtin2,
-          'price' => $price2,
-        ],
-      ],
+      'products' => $products,
       'company' => [
         'companyName' => $companyName,
         'localization' => $localization,
@@ -164,15 +198,17 @@ class AwakeMLevaCompareForm extends FormBase {
     // Faça a requisição POST usando Guzzle
     $client = new Client();
     try {
-      $response = $client->post('http://mleva-api:8080/mleva', [
+      $response = $client->post('https://mleva-04f05d539d3b.herokuapp.com/mleva', [
         'json' => $payload,
       ]);
 
       // Verifica a resposta usando a classe auxiliar
-      $this->responseHelper->verificaAResposta($response, $form_state);
+      $this->responseHelper->processResponse($response, $form_state);
     }
     catch (Exception $e) {
-      $this->messenger()->addError($this->t('Erro ao conectar com o serviço: @message', ['@message' => $e->getMessage()]));
+      $this->messenger()
+        ->addError($this->t('Erro ao conectar com o serviço: @message', ['@message' => $e->getMessage()]));
     }
   }
+
 }

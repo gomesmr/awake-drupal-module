@@ -1,11 +1,11 @@
 services:
   awake.client:
     class: Drupal\awake\Client\AwakeClient
-    arguments: ['@http_client', '@messenger']
+    arguments: [ '@http_client', '@messenger' ]
 
   awake.form_mleva_recalculate:
     class: Drupal\awake\Form\AwakeMLevaRecalculateForm
-    arguments: ['@awake.client', '@messenger']
+    arguments: [ '@awake.client', '@messenger' ]
     tags:
       - { name: form, form_id: awake_mleva_recalculate_form }
 

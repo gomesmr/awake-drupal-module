@@ -2,11 +2,12 @@
 
 namespace Drupal\awake\Controller;
 
+use Drupal\awake\Client\AwakeClient;
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\awake\Client\AwakeClient;
 
 class AwakeController extends ControllerBase {
+
   protected $awakeClient;
 
   public function __construct(AwakeClient $awake_client) {
@@ -18,11 +19,14 @@ class AwakeController extends ControllerBase {
   }
 
   /**
-   * Decide qual template ou form exibir com base no conteúdo do array 'recalculateProducts'.
+   * Decide qual template ou form exibir com base no conteúdo do array
+   * 'recalculateProducts'.
    */
   public function decideResponse() {
     // Recupera os dados da sessão
-    $response_data = \Drupal::request()->getSession()->get('awake_response_data');
+    $response_data = \Drupal::request()
+      ->getSession()
+      ->get('awake_response_data');
 
     // Verifique se a resposta foi recebida
     if (!$response_data) {
@@ -54,14 +58,17 @@ class AwakeController extends ControllerBase {
       $errors = [$errors]; // Converte para array se for uma string
     }
 
+    // Convertendo a data no formato padrão esperado
+    $dateTime = isset($response_data['dateTime']) ? \DateTime::createFromFormat('d/m/Y H:i:s', $response_data['dateTime']) : null;
+
     // Preparação do build para renderização no Twig
     $build = [
       '#theme' => 'awake_response',
       '#products' => $response_data['products'] ?? [],
       '#errors' => $errors,
-      '#company' => $response_data['company'] ?? null,
-      '#user' => $response_data['user'] ?? null,
-      '#dateTime' => $response_data['dateTime'] ?? null,
+      '#company' => $response_data['company'] ?? NULL,
+      '#user' => $response_data['user'] ?? NULL,
+      '#dateTime' => $dateTime ? $dateTime->format('d/m/y H:i') : NULL,
       '#recalculateProducts' => $response_data['recalculateProducts'] ?? [],
     ];
 
@@ -75,15 +82,13 @@ class AwakeController extends ControllerBase {
    * Redireciona para o formulário AwakeMLevaRecalculateForm.
    */
   protected function renderRecalculateForm(array $response_data) {
-    // Imprime o response para depuração
-//    echo '<pre>';
-//    print_r($response_data);
-//    echo '</pre>';
-//    exit; // Comente isso após a depuração.
     // Armazena os dados da resposta na sessão
-    \Drupal::request()->getSession()->set('awake_response_data', $response_data);
+    \Drupal::request()
+      ->getSession()
+      ->set('awake_response_data', $response_data);
 
     // Redireciona para a rota que exibe o formulário de recalculação
     return $this->redirect('awake.recalculate_form');
   }
+
 }
