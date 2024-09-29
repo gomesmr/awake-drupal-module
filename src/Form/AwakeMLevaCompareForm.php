@@ -53,57 +53,54 @@ class AwakeMLevaCompareForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state): array {
-    // Adiciona a biblioteca de estilos do módulo
     $form['#attached']['library'][] = 'awake/styles';
-    // Adiciona a biblioteca de máscara de preço
     $form['#attached']['library'][] = 'awake/js';
 
+    // Verifica quantos conjuntos de campos já foram adicionados
+    $num_products = $form_state->get('num_products');
+    if ($num_products === NULL) {
+      $num_products = 2; // Começa com 2 conjuntos de campos
+      $form_state->set('num_products', $num_products);
+    }
 
-    // Primeiro conjunto de campos para GTIN 01 e Preço 01
-    $form['group1'] = [
-      '#type' => 'fieldset',
-      '#title' => $this->t('Cód Barras 01 e Preço 01'),
+    // Loop para adicionar os conjuntos de campos dinamicamente
+    for ($i = 1; $i <= $num_products; $i++) {
+      $form["group{$i}"] = [
+        '#type' => 'fieldset',
+        '#title' => $this->t("Cód Barras {$i} e Preço {$i}"),
+      ];
+
+      $form["group{$i}"]["field_gtin_{$i}"] = [
+        '#type' => 'textfield',
+        '#title' => $this->t("Código de Barras {$i}"),
+        '#default_value' => '',
+        '#description' => $this->t("Informe o código de barras do produto {$i} que deseja comparar."),
+        '#required' => TRUE,
+      ];
+
+      $form["group{$i}"]["field_preco_{$i}"] = [
+        '#type' => 'textfield',
+        '#title' => $this->t("Preço {$i}"),
+        '#default_value' => '',
+        '#description' => $this->t("Informe o preço do produto {$i} para a comparação."),
+        '#required' => TRUE,
+      ];
+    }
+
+    // Botão para adicionar mais conjuntos de campos
+    $form['add_more'] = [
+      '#type' => 'submit',
+      '#value' => $this->t('Adicionar mais produtos'),
+      '#submit' => ['::addMoreProducts'],
+      '#ajax' => [
+        'callback' => '::ajaxCallback',
+        'wrapper' => 'products-wrapper',
+      ],
     ];
 
-    $form['group1']['field_gtin_1'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Código de Barras 01'),
-      '#default_value' => '',
-      '#description' => $this->t('Informe o código de barras do primeiro produto que deseja comparar.'),
-      '#required' => TRUE,
-    ];
-
-    $form['group1']['field_preco_1'] = [
-      '#type' => 'number',
-      '#step' => '0.01',
-      '#title' => $this->t('Preço 01'),
-      '#default_value' => '',
-      '#description' => $this->t('Informe o preço do primeiro produto para a comparação.'),
-      '#required' => TRUE,
-    ];
-
-    // Segundo conjunto de campos para GTIN 02 e Preço 02
-    $form['group2'] = [
-      '#type' => 'fieldset',
-      '#title' => $this->t('Cód Barras 02 e Preço 02'),
-    ];
-
-    $form['group2']['field_gtin_2'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Código de Barras 02'),
-      '#default_value' => '',
-      '#description' => $this->t('Informe o código de barras do segundo produto que deseja comparar.'),
-      '#required' => TRUE,
-    ];
-
-    $form['group2']['field_preco_2'] = [
-      '#type' => 'number',
-      '#step' => '0.01',
-      '#title' => $this->t('Preço 02'),
-      '#default_value' => '',
-      '#description' => $this->t('Informe o preço do segundo produto para a comparação.'),
-      '#required' => TRUE,
-    ];
+    // Wrapper para os campos de produtos
+    $form['#prefix'] = '<div id="products-wrapper">';
+    $form['#suffix'] = '</div>';
 
     // Campos para informações da empresa
     $form['company'] = [
@@ -153,31 +150,42 @@ class AwakeMLevaCompareForm extends FormBase {
     return $form;
   }
 
+  public function addMoreProducts(array &$form, FormStateInterface $form_state) {
+    // Incrementa o número de conjuntos de campos
+    $num_products = $form_state->get('num_products');
+    $form_state->set('num_products', $num_products + 1);
+
+    // Rebuild the form to reflect the new number of products
+    $form_state->setRebuild();
+  }
+
+  public function ajaxCallback(array &$form, FormStateInterface $form_state) {
+    return $form;
+  }
+
   /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state): void {
-    // Pegue os valores do formulário
-    $gtin1 = $form_state->getValue('field_gtin_1');
-    $price1 = $form_state->getValue('field_preco_1');
-    $gtin2 = $form_state->getValue('field_gtin_2');
-    $price2 = $form_state->getValue('field_preco_2');
+    $num_products = $form_state->get('num_products');
+    $products = [];
+
+    for ($i = 1; $i <= $num_products; $i++) {
+      $gtin = $form_state->getValue("field_gtin_{$i}");
+      $price = $form_state->getValue("field_preco_{$i}");
+      $products[] = [
+        'gtin' => $gtin,
+        'price' => $price,
+      ];
+    }
+
     $companyName = $form_state->getValue('company_name');
     $localization = $form_state->getValue('localization_field');
     $userName = $form_state->getValue('user_name');
 
     // Monte o payload para a requisição POST
     $payload = [
-      'products' => [
-        [
-          'gtin' => $gtin1,
-          'price' => $price1,
-        ],
-        [
-          'gtin' => $gtin2,
-          'price' => $price2,
-        ],
-      ],
+      'products' => $products,
       'company' => [
         'companyName' => $companyName,
         'localization' => $localization,

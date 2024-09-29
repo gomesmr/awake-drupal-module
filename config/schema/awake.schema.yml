@@ -1,0 +1,7 @@
+awake.settings:
+  type: config_object
+  label: 'Awake Module Configuration'
+  mapping:
+    custom_css:
+      type: text
+      label: 'Custom CSS'

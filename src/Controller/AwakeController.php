@@ -58,6 +58,9 @@ class AwakeController extends ControllerBase {
       $errors = [$errors]; // Converte para array se for uma string
     }
 
+    // Convertendo a data no formato padrão esperado
+    $dateTime = isset($response_data['dateTime']) ? \DateTime::createFromFormat('d/m/Y H:i:s', $response_data['dateTime']) : null;
+
     // Preparação do build para renderização no Twig
     $build = [
       '#theme' => 'awake_response',
@@ -65,7 +68,7 @@ class AwakeController extends ControllerBase {
       '#errors' => $errors,
       '#company' => $response_data['company'] ?? NULL,
       '#user' => $response_data['user'] ?? NULL,
-      '#dateTime' => $response_data['dateTime'] ?? NULL,
+      '#dateTime' => $dateTime ? $dateTime->format('d/m/y H:i') : NULL,
       '#recalculateProducts' => $response_data['recalculateProducts'] ?? [],
     ];
 
@@ -79,11 +82,6 @@ class AwakeController extends ControllerBase {
    * Redireciona para o formulário AwakeMLevaRecalculateForm.
    */
   protected function renderRecalculateForm(array $response_data) {
-    // Imprime o response para depuração
-    //    echo '<pre>';
-    //    print_r($response_data);
-    //    echo '</pre>';
-    //    exit; // Comente isso após a depuração.
     // Armazena os dados da resposta na sessão
     \Drupal::request()
       ->getSession()

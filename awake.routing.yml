@@ -21,3 +21,11 @@ awake.recalculate_form:
     _permission: 'access content'
   options:
     no_cache: TRUE
+
+awake.settings:
+  path: '/admin/config/awake/settings'
+  defaults:
+    _form: '\Drupal\awake\Form\AwakeSettingsForm'
+    _title: 'Awake Module Configuration'
+  requirements:
+    _permission: 'administer site configuration'

@@ -6,13 +6,13 @@
     <ul class="response-list">
         {% for product in products %}
             <div class="response-item">
-                <span><h2>{{ product.description }}</h2></span><br>
-                <span><h3><strong>GTIN:</strong> {{ product.gtin }}</h3></span><br>
-                <span><strong>Índice:</strong> {{ product.index }}</span><br>
-                <span><strong>Preço:</strong> R$ {{ product.price }}</span><br>
-                <span><strong>Volume:</strong> {{ product.volume }} {{ product.unity }}</span><br>
-                <span><strong>Quantidade:</strong> {{ product.quantity }}</span><br>
-                <span><strong>Status:</strong> {{ product.status }}</span>
+                <h2>{{ product.description }}</h2>
+                <p><strong>GTIN:</strong> {{ product.gtin }}</p>
+                <p><strong>Índice:</strong> {{ product.index | default('N/A') }}</p>
+                <p><strong>Preço:</strong> R$ {{ product.price | number_format(2, ',', '.') }}</p>
+                <p><strong>Volume:</strong> {{ product.volume | default('N/A') }} {{ product.unity | default('N/A') }}</p>
+                <p><strong>Quantidade:</strong> {{ product.quantity | default('N/A') }}</p>
+                <p><strong>Status:</strong> {{ product.status | default('N/A') }}</p>
             </div>
         {% else %}
             <div class="response-item">
@@ -33,13 +33,13 @@
 
     <!-- Empresa -->
     <h4 class="response-subheader">Empresa</h4>
-    <p>{{ company.companyName }}</p>
+    <p>{{ company.companyName | default('N/A') }}</p>
 
     <!-- Usuário -->
     <h4 class="response-subheader">Usuário</h4>
-    <p>{{ user.userName }}</p>
+    <p>{{ user.userName | default('N/A') }}</p>
 
     <!-- Data e Hora -->
-    <p><strong>Data e Hora:</strong> {{ dateTime }}</p>
+    <p><strong>Data e Hora:</strong> {{ dateTime | date('d/m/Y H:i:s') }}</p>
 
 </div>
