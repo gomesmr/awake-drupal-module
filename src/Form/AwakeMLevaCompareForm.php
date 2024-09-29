@@ -57,33 +57,57 @@ class AwakeMLevaCompareForm extends FormBase {
     $form['#attached']['library'][] = 'awake/js';
 
     // Verifica quantos conjuntos de campos já foram adicionados
-    $num_products = $form_state->get('num_products');
-    if ($num_products === NULL) {
-      $num_products = 2; // Começa com 2 conjuntos de campos
-      $form_state->set('num_products', $num_products);
+    $products = $form_state->get('products') ?? [];
+
+    // Inicialize os dois primeiros produtos se não estiverem definidos
+    if (empty($products)) {
+      $products = [
+        ['gtin' => '', 'price' => ''],  // Produto 1
+        ['gtin' => '', 'price' => ''],  // Produto 2
+      ];
     }
 
+    // Wrapper para os produtos
+    $form['products_wrapper'] = [
+      '#type' => 'container',
+      '#attributes' => ['id' => 'products-wrapper'],
+    ];
+
     // Loop para adicionar os conjuntos de campos dinamicamente
-    for ($i = 1; $i <= $num_products; $i++) {
-      $form["group{$i}"] = [
+    foreach ($products as $key => $product) {
+      $form['products_wrapper']['product_' . $key] = [
         '#type' => 'fieldset',
-        '#title' => $this->t("Cód Barras {$i} e Preço {$i}"),
+        '#title' => $this->t('Produto @num', ['@num' => $key + 1]),
       ];
 
-      $form["group{$i}"]["field_gtin_{$i}"] = [
+      $form['products_wrapper']['product_' . $key]['field_gtin_' . $key] = [
         '#type' => 'textfield',
-        '#title' => $this->t("Código de Barras {$i}"),
-        '#default_value' => '',
-        '#description' => $this->t("Informe o código de barras do produto {$i} que deseja comparar."),
+        '#title' => $this->t("Código de Barras @num", ['@num' => $key + 1 ]),
+        '#default_value' => $product['gtin'] ?? '',
+        '#description' => $this->t("Informe o código de barras do produto @num que deseja comparar.", ['@num' => $key +1 ]),
         '#required' => TRUE,
       ];
 
-      $form["group{$i}"]["field_preco_{$i}"] = [
+      $form['products_wrapper']['product_' . $key]['field_preco_' . $key] = [
         '#type' => 'textfield',
-        '#title' => $this->t("Preço {$i}"),
-        '#default_value' => '',
-        '#description' => $this->t("Informe o preço do produto {$i} para a comparação."),
+        '#title' => $this->t("Preço @num", ['@num' => $key + 1]),
+        '#default_value' => $product['price'] ?? '',
+        '#description' => $this->t("Informe o preço do produto @num para a comparação.", ['@num' => $key + 1]),
         '#required' => TRUE,
+      ];
+
+      // Botão para remover o conjunto de campos
+      $form['products_wrapper']['product_' . $key]['remove_product'] = [
+        '#type' => 'submit',
+        '#value' => $this->t('Remover Produto'),
+        '#submit' => ['::removeProduct'],
+        '#ajax' => [
+          'callback' => '::ajaxCallback',
+          'wrapper' => 'products-wrapper',
+        ],
+        '#name' => 'remove_product_' . $key,
+        // Impede a validação ao remover um produto
+        '#limit_validation_errors' => [],
       ];
     }
 
@@ -97,10 +121,6 @@ class AwakeMLevaCompareForm extends FormBase {
         'wrapper' => 'products-wrapper',
       ],
     ];
-
-    // Wrapper para os campos de produtos
-    $form['#prefix'] = '<div id="products-wrapper">';
-    $form['#suffix'] = '</div>';
 
     // Campos para informações da empresa
     $form['company'] = [
@@ -151,34 +171,52 @@ class AwakeMLevaCompareForm extends FormBase {
   }
 
   public function addMoreProducts(array &$form, FormStateInterface $form_state) {
-    // Incrementa o número de conjuntos de campos
-    $num_products = $form_state->get('num_products');
-    $form_state->set('num_products', $num_products + 1);
+    // Adiciona um novo produto à lista
+    $products = $form_state->get('products') ?? [];
+    $products[] = ['gtin' => '', 'price' => ''];
+    $form_state->set('products', $products);
 
     // Rebuild the form to reflect the new number of products
     $form_state->setRebuild();
   }
 
+  public function removeProduct(array &$form, FormStateInterface $form_state) {
+    // Obter o nome do botão que foi clicado
+    $triggering_element = $form_state->getTriggeringElement();
+    $button_name = $triggering_element['#name'];
+
+    // Extrair o índice do produto a ser removido
+    if (preg_match('/remove_product_(\d+)/', $button_name, $matches)) {
+      $index = $matches[1];
+
+      // Impedir que os dois primeiros produtos sejam removidos
+      if ($index < 2) {
+        $this->messenger()
+          ->addWarning($this->t('Os dois primeiros produtos não podem ser removidos.'));
+        return;
+      }
+
+      // Remover o produto da lista
+      $products = $form_state->get('products');
+      unset($products[$index]);
+
+      // Reindexar o array para evitar buracos
+      $form_state->set('products', array_values($products));
+    }
+
+    // Rebuild the form to reflect the changes
+    $form_state->setRebuild();
+  }
+
   public function ajaxCallback(array &$form, FormStateInterface $form_state) {
-    return $form;
+    return $form['products_wrapper'];
   }
 
   /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state): void {
-    $num_products = $form_state->get('num_products');
-    $products = [];
-
-    for ($i = 1; $i <= $num_products; $i++) {
-      $gtin = $form_state->getValue("field_gtin_{$i}");
-      $price = $form_state->getValue("field_preco_{$i}");
-      $products[] = [
-        'gtin' => $gtin,
-        'price' => $price,
-      ];
-    }
-
+    $products = $form_state->get('products') ?? [];
     $companyName = $form_state->getValue('company_name');
     $localization = $form_state->getValue('localization_field');
     $userName = $form_state->getValue('user_name');
