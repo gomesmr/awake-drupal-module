@@ -9,9 +9,11 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use GuzzleHttp\Client;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Psr\Log\LogLevel;
+use Drupal\Core\Session\AccountProxyInterface;
 
 /**
- * @method t(string $string)
+ * Formulário para comparação de produtos MLeva.
  */
 class AwakeMLevaCompareForm extends FormBase {
 
@@ -25,7 +27,7 @@ class AwakeMLevaCompareForm extends FormBase {
    * Construtor da classe, injetando os serviços AwakeClient,
    * AwakeResponseHelper e current_user.
    */
-  public function __construct(AwakeClient $awake_client, AwakeResponseHelper $response_helper, $current_user) {
+  public function __construct(AwakeClient $awake_client, AwakeResponseHelper $response_helper, AccountProxyInterface $current_user) {
     $this->awakeClient = $awake_client;
     $this->responseHelper = $response_helper;
     $this->currentUser = $current_user;
@@ -37,8 +39,8 @@ class AwakeMLevaCompareForm extends FormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('awake.client'),
-      $container->get('awake.response_helper'),  // Injeta o helper de resposta
-      $container->get('current_user')  // Injeta o serviço de usuário atual
+      $container->get('awake.response_helper'),
+      $container->get('current_user')
     );
   }
 
@@ -56,15 +58,15 @@ class AwakeMLevaCompareForm extends FormBase {
     $form['#attached']['library'][] = 'awake/styles';
     $form['#attached']['library'][] = 'awake/js';
 
-    // Verifica quantos conjuntos de campos já foram adicionados
     $products = $form_state->get('products') ?? [];
 
-    // Inicialize os dois primeiros produtos se não estiverem definidos
+    // Inicializa os dois primeiros produtos, se ainda não estiverem configurados
     if (empty($products)) {
       $products = [
         ['gtin' => '', 'price' => ''],  // Produto 1
         ['gtin' => '', 'price' => ''],  // Produto 2
       ];
+      $form_state->set('products', $products); // Salva no estado
     }
 
     // Wrapper para os produtos
@@ -82,9 +84,9 @@ class AwakeMLevaCompareForm extends FormBase {
 
       $form['products_wrapper']['product_' . $key]['field_gtin_' . $key] = [
         '#type' => 'textfield',
-        '#title' => $this->t("Código de Barras @num", ['@num' => $key + 1 ]),
+        '#title' => $this->t("Código de Barras @num", ['@num' => $key + 1]),
         '#default_value' => $product['gtin'] ?? '',
-        '#description' => $this->t("Informe o código de barras do produto @num que deseja comparar.", ['@num' => $key +1 ]),
+        '#description' => $this->t("Informe o código de barras do produto @num que deseja comparar.", ['@num' => $key + 1]),
         '#required' => TRUE,
       ];
 
@@ -96,22 +98,23 @@ class AwakeMLevaCompareForm extends FormBase {
         '#required' => TRUE,
       ];
 
-      // Botão para remover o conjunto de campos
-      $form['products_wrapper']['product_' . $key]['remove_product'] = [
-        '#type' => 'submit',
-        '#value' => $this->t('Remover Produto'),
-        '#submit' => ['::removeProduct'],
-        '#ajax' => [
-          'callback' => '::ajaxCallback',
-          'wrapper' => 'products-wrapper',
-        ],
-        '#name' => 'remove_product_' . $key,
-        // Impede a validação ao remover um produto
-        '#limit_validation_errors' => [],
-      ];
+      // Exibir o botão "Remover Produto" apenas para produtos após os dois primeiros
+      if ($key >= 2) {
+        $form['products_wrapper']['product_' . $key]['remove_product'] = [
+          '#type' => 'submit',
+          '#value' => $this->t('Remover Produto'),
+          '#submit' => ['::removeProduct'],
+          '#ajax' => [
+            'callback' => '::ajaxCallback',
+            'wrapper' => 'products-wrapper',
+          ],
+          '#name' => 'remove_product_' . $key,
+          '#limit_validation_errors' => [],
+        ];
+      }
     }
 
-    // Botão para adicionar mais conjuntos de campos
+    // Botão para adicionar mais produtos
     $form['add_more'] = [
       '#type' => 'submit',
       '#value' => $this->t('Adicionar mais produtos'),
@@ -150,9 +153,7 @@ class AwakeMLevaCompareForm extends FormBase {
       '#title' => $this->t('Informações do Usuário'),
     ];
 
-    // Obtenha o nome do usuário atual e preencha o campo automaticamente
     $currentUserName = $this->currentUser->getDisplayName();
-
     $form['user']['user_name'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Nome do Usuário'),
@@ -171,40 +172,47 @@ class AwakeMLevaCompareForm extends FormBase {
   }
 
   public function addMoreProducts(array &$form, FormStateInterface $form_state) {
+    // Recupera os valores preenchidos dos produtos existentes
+    $values = $form_state->getValues();
+    $products = $form_state->get('products');
+
+    // Atualiza os produtos já existentes com os valores atuais
+    foreach ($products as $key => &$product) {
+      $product['gtin'] = $values['field_gtin_' . $key] ?? '';
+      $product['price'] = $values['field_preco_' . $key] ?? '';
+    }
+
     // Adiciona um novo produto à lista
-    $products = $form_state->get('products') ?? [];
     $products[] = ['gtin' => '', 'price' => ''];
     $form_state->set('products', $products);
 
-    // Rebuild the form to reflect the new number of products
     $form_state->setRebuild();
   }
 
   public function removeProduct(array &$form, FormStateInterface $form_state) {
-    // Obter o nome do botão que foi clicado
     $triggering_element = $form_state->getTriggeringElement();
     $button_name = $triggering_element['#name'];
 
-    // Extrair o índice do produto a ser removido
     if (preg_match('/remove_product_(\d+)/', $button_name, $matches)) {
       $index = $matches[1];
 
-      // Impedir que os dois primeiros produtos sejam removidos
       if ($index < 2) {
-        $this->messenger()
-          ->addWarning($this->t('Os dois primeiros produtos não podem ser removidos.'));
+        $this->messenger()->addWarning($this->t('Os dois primeiros produtos não podem ser removidos.'));
         return;
       }
 
-      // Remover o produto da lista
+      $values = $form_state->getValues();
       $products = $form_state->get('products');
-      unset($products[$index]);
 
-      // Reindexar o array para evitar buracos
+      foreach ($products as $key => &$product) {
+        $product['gtin'] = $values['field_gtin_' . $key] ?? '';
+        $product['price'] = $values['field_preco_' . $key] ?? '';
+      }
+
+      unset($products[$index]);
       $form_state->set('products', array_values($products));
     }
 
-    // Rebuild the form to reflect the changes
     $form_state->setRebuild();
   }
 
@@ -216,37 +224,51 @@ class AwakeMLevaCompareForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state): void {
-    $products = $form_state->get('products') ?? [];
-    $companyName = $form_state->getValue('company_name');
-    $localization = $form_state->getValue('localization_field');
-    $userName = $form_state->getValue('user_name');
+    // Captura os valores mais recentes dos campos dinâmicos
+    $products = [];
+    $values = $form_state->getValues();
+    $stored_products = $form_state->get('products');
 
-    // Monte o payload para a requisição POST
+    foreach ($stored_products as $key => $product) {
+      $products[] = [
+        'gtin' => $values['field_gtin_' . $key] ?? '',
+        'price' => $values['field_preco_' . $key] ?? '',
+      ];
+    }
+
+    $company_name = $form_state->getValue('company_name');
+    $localization = $form_state->getValue('localization_field');
+    $user_name = $form_state->getValue('user_name');
+
+    // Cria o payload para enviar à API com os nomes corretos das chaves
     $payload = [
       'products' => $products,
       'company' => [
-        'companyName' => $companyName,
+        'companyName' => $company_name,
         'localization' => $localization,
       ],
       'user' => [
-        'userName' => $userName,
+        'userName' => $user_name,
       ],
     ];
+
+    // Log do payload
+    Drupal::logger('awake')->log(LogLevel::INFO, 'Payload enviado: <pre>@payload</pre>', [
+      '@payload' => json_encode($payload, JSON_PRETTY_PRINT),
+    ]);
 
     // Faça a requisição POST usando Guzzle
     $client = new Client();
     try {
-      $response = $client->post('https://mleva-04f05d539d3b.herokuapp.com/mleva', [
+      $response = $client->post('https://app.mleva.com.br/mleva', [
         'json' => $payload,
       ]);
 
       // Verifica a resposta usando a classe auxiliar
       $this->responseHelper->processResponse($response, $form_state);
-    }
-    catch (Exception $e) {
-      $this->messenger()
-        ->addError($this->t('Erro ao conectar com o serviço: @message', ['@message' => $e->getMessage()]));
+    } catch (\Exception $e) {
+      Drupal::logger('awake')->error('Erro ao conectar com o serviço: @message', ['@message' => $e->getMessage()]);
+      $this->messenger()->addError($this->t('Erro ao conectar com o serviço: @message', ['@message' => $e->getMessage()]));
     }
   }
-
 }

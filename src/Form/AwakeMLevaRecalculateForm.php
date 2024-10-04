@@ -327,7 +327,7 @@ class AwakeMLevaRecalculateForm extends FormBase {
     // Faça a requisição POST usando Guzzle
     $client = new Client();
     try {
-      $response = $client->post('https://mleva-04f05d539d3b.herokuapp.com/mleva/recalculate', [
+      $response = $client->post('https://app.mleva.com.br/mleva/recalculate', [
         'json' => $payload,
       ]);
 
