@@ -59,7 +59,7 @@ class AwakeController extends ControllerBase {
     }
 
     // Convertendo a data no formato padrão esperado
-    $dateTime = isset($response_data['dateTime']) ? \DateTime::createFromFormat('d/m/Y H:i:s', $response_data['dateTime']) : null;
+    $dateTime = isset($response_data['dateTime']) ? \DateTime::createFromFormat('d/m/y H:i:s', $response_data['dateTime']) : null;
 
     // Preparação do build para renderização no Twig
     $build = [
