@@ -68,7 +68,7 @@ class AwakeController extends ControllerBase {
       '#errors' => $errors,
       '#company' => $response_data['company'] ?? NULL,
       '#user' => $response_data['user'] ?? NULL,
-      '#dateTime' => $dateTime ? $dateTime->format('d/m/y H:i') : NULL,
+      '#dateTime' => $dateTime ? $dateTime->format('d/m/y H:i:s') : NULL,
       '#recalculateProducts' => $response_data['recalculateProducts'] ?? [],
     ];
 

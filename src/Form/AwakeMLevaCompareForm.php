@@ -260,7 +260,7 @@ class AwakeMLevaCompareForm extends FormBase {
     // Faça a requisição POST usando Guzzle
     $client = new Client();
     try {
-      $response = $client->post('https://app.mleva.com.br/mleva', [
+      $response = $client->post('https://api.mleva.com.br/mleva', [
         'json' => $payload,
       ]);
 
